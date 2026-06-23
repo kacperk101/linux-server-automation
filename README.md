@@ -50,7 +50,7 @@ sudo bash deploy.sh
 
 
 
-When prompted, paste your SSH public key.
+When prompted paste your SSH public key
 
 
 
