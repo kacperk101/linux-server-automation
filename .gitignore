@@ -1,0 +1,19 @@
+# Logs
+*.log
+*.log.*
+
+# Backups created by the script
+*.bak
+
+# Environment files — never commit secrets
+.env
+
+# SSH keys — never commit these
+id_ed25519
+id_ed25519.pub
+id_rsa
+id_rsa.pub
+
+# Windows junk
+Thumbs.db
+Desktop.ini
