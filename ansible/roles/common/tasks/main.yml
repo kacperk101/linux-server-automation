@@ -1,0 +1,63 @@
+---
+- name: Update apt package cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Upgrade all packages
+  apt:
+    upgrade: dist
+    autoremove: yes
+
+- name: Install required packages
+  apt:
+    name:
+      - curl
+      - wget
+      - vim
+      - git
+      - htop
+      - net-tools
+      - ufw
+      - fail2ban
+      - nginx
+      - unattended-upgrades
+    state: present
+
+- name: Enable automatic security updates
+  debconf:
+    name: unattended-upgrades
+    question: unattended-upgrades/enable_auto_updates
+    value: "true"
+    vtype: boolean
+
+- name: Create admin user
+  user:
+    name: "{{ admin_user }}"
+    shell: /bin/bash
+    groups: sudo
+    append: yes
+    create_home: yes
+    state: present
+
+- name: Create .ssh directory for admin user
+  file:
+    path: "/home/{{ admin_user }}/.ssh"
+    state: directory
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: "0700"
+
+- name: Deploy SSH public key
+  authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ ssh_public_key }}"
+    state: present
+
+- name: Create backup directory
+  file:
+    path: /var/backups/server
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"

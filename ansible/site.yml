@@ -1,0 +1,93 @@
+---
+# site.yml — Master Playbook
+# Runs all roles in order to fully provision a server
+# Usage: ansible-playbook site.yml
+
+- name: Phase 1 — System Update and Packages
+  hosts: linux_server
+  become: yes
+  roles:
+    - common
+
+- name: Phase 2 — Security Hardening
+  hosts: linux_server
+  become: yes
+  roles:
+    - security
+
+- name: Phase 3 — Web Server Deployment
+  hosts: linux_server
+  become: yes
+  roles:
+    - webserver
+
+- name: Phase 4 — Docker and Container Deployment
+  hosts: linux_server
+  become: yes
+  roles:
+    - docker
+
+- name: Phase 5 — Maintenance Tasks
+  hosts: linux_server
+  become: yes
+  tasks:
+    - name: Schedule weekly system updates
+      cron:
+        name: "Weekly system update"
+        weekday: "0"
+        hour: "3"
+        minute: "0"
+        user: root
+        job: "apt-get update -qq && apt-get upgrade -y -qq >> /var/log/auto-update.log 2>&1"
+        state: present
+
+    - name: Schedule daily backup
+      cron:
+        name: "Daily backup"
+        hour: "2"
+        minute: "0"
+        user: root
+        job: "tar -czf /var/backups/server/backup-$(date +%F).tar.gz /etc /var/www/html >> /var/log/backup.log 2>&1"
+        state: present
+
+    - name: Schedule health check every 5 minutes
+      cron:
+        name: "Health check"
+        minute: "*/5"
+        user: root
+        job: "/usr/local/bin/health-check >> /var/log/health-check.log 2>&1"
+        state: present
+
+    - name: Configure persistent journald logging
+      copy:
+        dest: /etc/systemd/journald.conf
+        content: |
+          [Journal]
+          Storage=persistent
+          SystemMaxUse=500M
+          MaxRetentionSec=30day
+          Compress=yes
+        backup: yes
+      notify: Restart journald
+
+    - name: Configure NGINX log rotation
+      copy:
+        dest: /etc/logrotate.d/nginx-custom
+        content: |
+          /var/log/nginx/*.log {
+              daily
+              rotate 14
+              compress
+              missingok
+              notifempty
+              sharedscripts
+              postrotate
+                  nginx -s reopen
+              endscript
+          }
+
+  handlers:
+    - name: Restart journald
+      service:
+        name: systemd-journald
+        state: restarted

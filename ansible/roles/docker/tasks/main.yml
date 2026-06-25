@@ -1,0 +1,68 @@
+---
+- name: Install Docker dependencies
+  apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+
+- name: Create Docker keyring directory
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Download Docker GPG key
+  shell: |
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+    gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  args:
+    creates: /etc/apt/keyrings/docker.gpg
+
+- name: Set Docker GPG key permissions
+  file:
+    path: /etc/apt/keyrings/docker.gpg
+    mode: "0644"
+
+- name: Add Docker repository
+  shell: |
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] \
+    https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+  args:
+    creates: /etc/apt/sources.list.d/docker.list
+
+- name: Update apt cache after adding Docker repo
+  apt:
+    update_cache: yes
+
+- name: Install Docker
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+
+- name: Add kkraj to docker group
+  user:
+    name: kkraj
+    groups: docker
+    append: yes
+
+- name: Ensure Docker is enabled and running
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Pull and run hello-world container
+  community.docker.docker_container:
+    name: hello-world
+    image: hello-world
+    state: started
+    auto_remove: yes

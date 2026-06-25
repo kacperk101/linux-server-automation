@@ -1,0 +1,7 @@
+---
+- name: System Update and Package Installation
+  hosts: linux_server
+  become: yes
+
+  roles:
+    - common

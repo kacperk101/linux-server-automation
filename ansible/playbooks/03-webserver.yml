@@ -1,0 +1,7 @@
+---
+- name: Web Server Deployment
+  hosts: linux_server
+  become: yes
+
+  roles:
+    - webserver

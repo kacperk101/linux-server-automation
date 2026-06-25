@@ -1,0 +1,7 @@
+---
+- name: Docker Installation and Container Deployment
+  hosts: linux_server
+  become: yes
+
+  roles:
+    - docker

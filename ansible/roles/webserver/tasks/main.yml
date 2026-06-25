@@ -1,0 +1,71 @@
+---
+- name: Ensure NGINX is installed
+  apt:
+    name: nginx
+    state: present
+
+- name: Deploy NGINX server block
+  copy:
+    dest: /etc/nginx/sites-available/default
+    content: |
+      server {
+          listen {{ http_port }} default_server;
+          listen [::]:{{ http_port }} default_server;
+
+          root /var/www/html;
+          index index.html;
+          server_name _;
+          server_tokens off;
+
+          add_header X-Frame-Options "SAMEORIGIN";
+          add_header X-Content-Type-Options "nosniff";
+          add_header X-XSS-Protection "1; mode=block";
+
+          location / {
+              try_files $uri $uri/ =404;
+          }
+
+          location ~ /\. {
+              deny all;
+          }
+      }
+    backup: yes
+  notify: Restart NGINX
+
+- name: Deploy landing page
+  copy:
+    dest: /var/www/html/index.html
+    content: |
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <title>Lab 2 — {{ student_name }}</title>
+          <style>
+              body { font-family: sans-serif; max-width: 600px; margin: 60px auto; color: #333; }
+              h1 { color: #c00; }
+              table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+              td, th { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+              th { background: #f4f4f4; }
+          </style>
+      </head>
+      <body>
+          <h1>Lab 2 — {{ student_name }}</h1>
+          <table>
+              <tr><th>Field</th><th>Value</th></tr>
+              <tr><td>Student</td><td>{{ student_name }}</td></tr>
+              <tr><td>Course</td><td>{{ course }}</td></tr>
+              <tr><td>Deployed by</td><td>Ansible</td></tr>
+              <tr><td>Hostname</td><td>{{ inventory_hostname }}</td></tr>
+          </table>
+      </body>
+      </html>
+    owner: www-data
+    group: www-data
+    mode: "0644"
+
+- name: Ensure NGINX is enabled and running
+  service:
+    name: nginx
+    state: started
+    enabled: yes
